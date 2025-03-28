@@ -26,3 +26,28 @@ Usage :
  """
 ```
 
+example :
+
+```python
+class BertMoEModel(nn.Module):
+    def __init__(self, num_experts=4, k=2, num_classes=3):
+        super(BertMoEModel, self).__init__()
+        self.bert = BertModel.from_pretrained("bert-base-uncased")
+        self.moe = MoELayer(input_dim=768, num_experts=num_experts, hidden_dim=1024, output_dim=768, k=k)
+
+        # Task-specific heads
+        self.classification_head = nn.Linear(768, num_classes)  # For classification
+        self.regression_head = nn.Linear(768, 1)  # For regression
+
+    def forward(self, input_ids, attention_mask, task="classification"):
+        bert_output = self.bert(input_ids, attention_mask).last_hidden_state[:, 0, :]
+        moe_output = self.moe(bert_output)
+
+        if task == "classification":
+            return self.classification_head(moe_output)
+        elif task == "regression":
+            return self.regression_head(moe_output)
+        else:
+            raise ValueError("Task must be 'classification' or 'regression'")
+
+```
